@@ -4,6 +4,41 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
 
+  // Handle participant delete (unregister)
+  activitiesList.addEventListener("click", async (event) => {
+    if (event.target.classList.contains("delete-participant")) {
+      const activity = event.target.getAttribute("data-activity");
+      const email = event.target.getAttribute("data-email");
+      if (activity && email) {
+        try {
+          // Call API to unregister participant
+          const response = await fetch(`/activities/${activity}/unregister?email=${encodeURIComponent(email)}`, {
+            method: "POST"
+          });
+          if (response.ok) {
+            // Remove participant from DOM
+            const li = event.target.closest("li");
+            if (li) {
+              li.remove();
+            }
+            // Optionally show a message
+            messageDiv.textContent = "Participant removed.";
+            messageDiv.className = "success";
+            messageDiv.classList.remove("hidden");
+            setTimeout(() => {
+              messageDiv.classList.add("hidden");
+            }, 3000);
+          } else {
+            const errorMsg = await response.text();
+            alert("Failed to remove participant: " + errorMsg);
+          }
+        } catch (err) {
+          alert("Error removing participant.");
+        }
+      }
+    }
+  });
+
   // Function to fetch activities from API
   async function fetchActivities() {
     try {
@@ -27,7 +62,12 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="participants-section">
               <strong>Participants:</strong>
               <ul class="participants-list">
-                ${details.participants.map(email => `<li>${email}</li>`).join("")}
+                ${details.participants.map(email => `
+                  <li style="list-style-type:none;display:flex;align-items:center;gap:8px;">
+                    <span>${email}</span>
+                    <span class="delete-participant" title="Remove" data-activity="${name}" data-email="${email}" style="cursor:pointer;color:#c62828;font-size:18px;">&#128465;</span>
+                  </li>
+                `).join("")}
               </ul>
             </div>
           `;
